@@ -26,14 +26,19 @@ Enhance the application as follows: If the elevator has reached its weight limit
 Note: For simplicity, the asynchronous request buttons can be entered by the application user via the console, by entering "5U" (request from 5th floor wanting to go Up) or "8D" (request from 8th floor wanting to go Down) or "2" (request from inside elevator wanting to stop at 2nd floor). When the user enters "Q" on the console, the application must end after visiting all floors entered before "Q".
 
 # Execution Instructions:
+ - Ensure .Net is installed
  - navigate to Elevator/Elevator
  - execute `dotnet run`
  - begin typing input and hit enter for each request
+ - Watch execution output in Elevator/Elevator/ElevatorLog.txt
+ - To execute tests, navigate back to ./Elevator/ and run `dotnet test`
 
 # Assumptions:
  - A potential passenger cannot press a button to request an exit until they've actually entered the elevator. A passenger does not have to indicate an exit request.
  - Inputs that do not match the described possible actions are just ignored.
  - Each occupant is allowed to choose 1 exit floor. If the elevator has 3 occupants and 3 exit requests are already pending, no new exit requests will be cached.
+ - To both successfully test the durationed nature of the application and complete a test suite quickly, I introduced a `runspeed` parameter for the elevator to be used from the test framework. It allows the elevator to operate 10x faster and is tested thusly.
+ - The test framework mocks the logging, due to the parallel nature of the [Test] methods and the single log file. Normally logged output goes to the Console during Test execution, rather than the ElevatorLog.txt file.
 
 
 # Improvement Ideas:

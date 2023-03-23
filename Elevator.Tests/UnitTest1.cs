@@ -4,7 +4,7 @@ using ElevatorChallenge;
 namespace Elevator.Tests;
 
 [TestFixture]
-[Description("The Elevator exposes methods to check its current weight and current floor to be used in assertions")]
+[Description("The Elevator exposes methods to check its current weight, current floor, and current pending requests, to be used in assertions")]
 public class Tests
 {
     private ElevatorChallenge.Elevator _testElevator;

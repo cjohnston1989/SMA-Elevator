@@ -221,15 +221,6 @@ namespace ElevatorChallenge
             return currentFloor;
         }
 
-        private string inpstr(){
-            string os = " "+this.weight + "|"+this.currentFloor+"|"+this.nextFloor+"    ";
-            foreach((int,int) i in inputs){
-                os = os + " "+i.Item1 + "|" + i.Item2 + " ";
-            }
-
-            return os;
-        }
-
         public int getCurrentFloor(){
             return this.currentFloor;
         }
