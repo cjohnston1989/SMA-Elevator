@@ -12,7 +12,10 @@ namespace ElevatorChallenge
         {
             Elevator elevator = new Elevator(5, 3);
             while(elevator.inService){
-                string input = Console.ReadLine();
+                string? input = Console.ReadLine();
+                while(input is null) {
+                    input = Console.ReadLine();
+                }
                 elevator.handleInput(input);
             }
             elevator.task.Wait();
@@ -74,10 +77,9 @@ namespace ElevatorChallenge
         public void handleInput(string input){
             // Do some input validation ( should be Q or an integer greater than 0 and less than or equal to maxfloor or such a number with either a U or a D after it)
             if(input is not null && inService) {
-                logger.log("pressed "+input + "    "+inpstr());
                 if(input == "Q"){
+                    logger.log("pressed "+input);
                     stopElevator();
-                    // this.taskArray.Add(Task.Run(() => moveElevator(inputs)));
                     return;
                 }
                 // Modify the inputs array
@@ -86,6 +88,7 @@ namespace ElevatorChallenge
                 // Someone wants to exit at a valid floor
                 if(isNumber && weight > exitRequests){
                     if(exitFloor > 0 && exitFloor <= floors){
+                        logger.log("pressed "+input);
                         inputs[exitFloor-1] = (inputs[exitFloor-1].Item1,inputs[exitFloor-1].Item2+1);
                         this.requests++;
                         this.exitRequests++;
@@ -98,20 +101,17 @@ namespace ElevatorChallenge
                     bool entranceIsNumber = int.TryParse(entranceFloorString, out entranceFloor);
                     // Someone on a valid floor wants to enter and has a valid direction
                     if(entranceIsNumber && (entranceFloor > 0) && (entranceFloor <= floors) && (entranceDirection=="D" || entranceDirection=="U")){
+                        logger.log("pressed "+input);
                         inputs[entranceFloor-1] = (inputs[entranceFloor-1].Item1 + 1,inputs[entranceFloor-1].Item2);
                         this.requests++;
                     }
                 }
 
                 // Make sure the elevator is moving
-                Console.WriteLine("R"+this.requests+"|"+this.paused+"|"+this.state+"|"+this.weight+"|"+this.maxWeight);
                 if(this.paused && (this.requests == 1 || (this.state == 0 && this.weight == this.maxWeight))){
                     this.paused = false;
-                    Console.WriteLine("paused is false now"+this.requests+"|"+this.paused+"|"+this.state+"|"+this.weight+"|"+this.maxWeight);
                     this.task = Task.Run(() => moveElevator(inputs));
                 }
-                // Task.WaitAll(this.taskArray.ToArray());
-                // this.taskArray.Add(Task.Run(() => moveElevator(inputs)));
             }
         }
 
@@ -163,17 +163,16 @@ namespace ElevatorChallenge
                     openTheDoors();
                 }
                 else{
-                    this.logger.log("passing "+currentFloor.ToString() + "    "+inpstr());
+                    this.logger.log("passing "+currentFloor.ToString());
                 }
             }
             this.paused = true;
-            this.logger.log("no more requests, pausing");
             return;
         }
 
         private void openTheDoors(){
             this.state=0;
-            this.logger.log("stopped at "+currentFloor.ToString() + "    "+inpstr());
+            this.logger.log("stopped at "+currentFloor.ToString());
             Thread.Sleep(1000 / runspeed);
             // Doors are opening
             this.weight -= inputs[currentFloor-1].Item2;
@@ -238,17 +237,14 @@ namespace ElevatorChallenge
         }
 
         public int getCurrentFloor(){
-            Console.WriteLine("F"+this.currentFloor);
             return this.currentFloor;
         }
 
         public int getWeight(){
-            Console.WriteLine("W"+this.weight);
             return this.weight;
         }
 
         public int getRequests(){
-            Console.WriteLine("R"+this.requests);
             return this.requests;
         }
 

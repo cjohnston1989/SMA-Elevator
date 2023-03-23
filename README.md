@@ -26,8 +26,16 @@ Enhance the application as follows: If the elevator has reached its weight limit
 
 Note: For simplicity, the asynchronous request buttons can be entered by the application user via the console, by entering "5U" (request from 5th floor wanting to go Up) or "8D" (request from 8th floor wanting to go Down) or "2" (request from inside elevator wanting to stop at 2nd floor). When the user enters "Q" on the console, the application must end after visiting all floors entered before "Q".
 
-Assumptions:
+* Execution Instructions:
+ - 
+
+* Assumptions:
+ - A potential passenger cannot press a button to request an exit until they've actually entered the elevator. A passenger does not have to indicate an exit request.
+ - Inputs that do not match the described possible actions are just ignored.
+ - Each occupant is allowed to choose 1 exit floor. If the elevator has 3 occupants and 3 exit requests are already pending, no new exit requests will be cached.
 
 
-Improvement Ideas:
-fix opening the door on the current floor after a pause
+* Improvement Ideas:
+ - Basement Floors: The array structure I chose to maintain 'inputs' fit better with positive floors, and as the example used positive floor numbers, I stuck with that for this proof of concept. To expand into the basement I could refactor the 'inputs' to a different Collection, or continue using an array, and also maintain an index <-> floor offset across the application, based on abs(lowestFloor).
+
+ - Multiple Cars: This would have truly called for an event stream. An Elevator program with N cars instead of 1 would be a fun and interesting expansion to this challenge.
