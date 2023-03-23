@@ -145,7 +145,6 @@ namespace ElevatorChallenge
                 }
                 else if(weight == maxWeight){
                     this.paused = true;
-                    this.logger.log("no more requests, pausing");
                     return;
                 }
                 else{
@@ -193,14 +192,12 @@ namespace ElevatorChallenge
                 }
                 for(int i = currentFloor + this.state; i <= floors; i++){
                     if((this.maxWeight > this.weight && inputs[i-1].Item1 > 0) || inputs[i-1].Item2 > 0){
-                        logger.log("nextFloor determined to be "+i);
                         return i;
                     }
                 }
                 this.direction = "D";
                 for(int i = currentFloor; i > 0; i--){
                     if((this.maxWeight > this.weight && inputs[i-1].Item1 > 0) || inputs[i-1].Item2 > 0){
-                        logger.log("nextFloor determined to be "+i+" and turning around");
                         return i;
                     }
                 }
@@ -211,19 +208,16 @@ namespace ElevatorChallenge
                 }
                 for(int i = currentFloor - this.state; i > 0; i--){
                     if((this.maxWeight > this.weight && inputs[i-1].Item1 > 0) || inputs[i-1].Item2 > 0){
-                        logger.log("nextFloor determined to be "+i);
                         return i;
                     }
                 }
                 this.direction = "U";
                 for(int i = currentFloor; i <= floors; i++){
                     if((this.maxWeight > this.weight && inputs[i-1].Item1 > 0) || inputs[i-1].Item2 > 0){
-                        logger.log("nextFloor determined to be "+i+" and turning around");
                         return i;
                     }
                 }
             }
-            logger.log("nextFloor defaulted to "+currentFloor);
             return currentFloor;
         }
 
