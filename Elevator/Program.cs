@@ -15,7 +15,7 @@ namespace ElevatorChallenge
                 string input = Console.ReadLine();
                 elevator.handleInput(input);
             }
-            Task.WaitAll(elevator.taskArray.ToArray());
+            elevator.task.Wait();
         }
     }
 
@@ -27,6 +27,8 @@ namespace ElevatorChallenge
     public class Elevator
     {
         private int floors;
+
+        // 1 weight is capacity for 1 person
         private int maxWeight;
 
         /// Valid values: ["U","D"]
@@ -42,12 +44,15 @@ namespace ElevatorChallenge
         public bool inService;
         private int requests;
         private int exitRequests;
-        public (int,int)[] inputs;
+        private (int,int)[] inputs;
         private int runspeed;
-        public Logger logger;
-        public List<Task> taskArray = new List<Task>();
+
+        private bool paused;
+        private Logger logger;
+        public Task task;
+
         // flat numbers here can be from a config file? starting small for ease of testing
-        // each weight is 1 person. isn't it nice we all weigh the same?
+        // mockLog and runspeed are both to ease test automation
         public Elevator(int floors = 5, int maxWeight = 3, bool mockLog = false, int runspeed = 1){
             this.logger = new Logger(mockLog);
             this.runspeed = runspeed;
@@ -61,16 +66,18 @@ namespace ElevatorChallenge
             this.requests = 0;
             this.exitRequests = 0;
             this.inputs = new (int,int)[floors];
+            this.paused = true;
             inService = true;
+            task = Task.FromResult<int>(0);
         }
 
-        public async void handleInput(string input){
+        public void handleInput(string input){
             // Do some input validation ( should be Q or an integer greater than 0 and less than or equal to maxfloor or such a number with either a U or a D after it)
-            if(input is not null) {
+            if(input is not null && inService) {
                 logger.log("pressed "+input + "    "+inpstr());
                 if(input == "Q"){
                     stopElevator();
-                    this.taskArray.Add(Task.Run(() => moveElevator(inputs)));
+                    // this.taskArray.Add(Task.Run(() => moveElevator(inputs)));
                     return;
                 }
                 // Modify the inputs array
@@ -80,11 +87,6 @@ namespace ElevatorChallenge
                 if(isNumber && weight > exitRequests){
                     if(exitFloor > 0 && exitFloor <= floors){
                         inputs[exitFloor-1] = (inputs[exitFloor-1].Item1,inputs[exitFloor-1].Item2+1);
-                        // This might not be appropriate here /This will handle some bullet 4 edge cases/
-                        // if(     (exitFloor > (currentFloor + state) && direction == "U") ||
-                        //         (exitFloor < (currentFloor - state) && direction == "D")) {
-                        //     nextFloor = exitFloor;
-                        // }
                         this.requests++;
                         this.exitRequests++;
                     }
@@ -97,31 +99,27 @@ namespace ElevatorChallenge
                     // Someone on a valid floor wants to enter and has a valid direction
                     if(entranceIsNumber && (entranceFloor > 0) && (entranceFloor <= floors) && (entranceDirection=="D" || entranceDirection=="U")){
                         inputs[entranceFloor-1] = (inputs[entranceFloor-1].Item1 + 1,inputs[entranceFloor-1].Item2);
-                        // same as above, maybe don't modify nextfloor logic from the handleinput section
-                        // if(     ((entranceFloor > (currentFloor + state) && direction == "U") ||
-                        //         (entranceFloor < (currentFloor - state) && direction == "D")) &&
-                        //         maxWeight > weight) {
-
-                        //     nextFloor = entranceFloor;
-                        // }
                         this.requests++;
                     }
                 }
 
                 // Make sure the elevator is moving
-                Console.WriteLine("R"+this.requests);
-                if(this.requests == 1 || (this.state == 0 && this.weight == this.maxWeight)){await Task.Run(() => moveElevator(inputs));}
+                Console.WriteLine("R"+this.requests+"|"+this.paused+"|"+this.state+"|"+this.weight+"|"+this.maxWeight);
+                if(this.paused && (this.requests == 1 || (this.state == 0 && this.weight == this.maxWeight))){
+                    this.paused = false;
+                    Console.WriteLine("paused is false now"+this.requests+"|"+this.paused+"|"+this.state+"|"+this.weight+"|"+this.maxWeight);
+                    this.task = Task.Run(() => moveElevator(inputs));
+                }
                 // Task.WaitAll(this.taskArray.ToArray());
                 // this.taskArray.Add(Task.Run(() => moveElevator(inputs)));
             }
         }
 
-        public void stopElevator(){
+        private void stopElevator(){
             inService = false;
         }
 
-
-        private async void moveElevator((int,int)[] inputs){
+        private async Task moveElevator((int,int)[] inputs){
             // Make the elevator move
             // At each loop entry we should have finished arrival at a floor and related tasks
             while(this.requests > 0){
@@ -145,9 +143,14 @@ namespace ElevatorChallenge
                     this.direction = "U";
                     this.nextFloor = findNextFloor();
                 }
-                else{
+                else if(weight == maxWeight){
+                    this.paused = true;
                     this.logger.log("no more requests, pausing");
                     return;
+                }
+                else{
+                    openTheDoors();
+                    continue;
                 }
 
                 // We have a target and no more work to do on this floor, lets move
@@ -157,29 +160,38 @@ namespace ElevatorChallenge
 
 
                 if(currentFloor == nextFloor){
-                    this.state=0;
-                    this.logger.log("stopped at "+currentFloor.ToString() + "    "+inpstr());
-                    await Task.Delay(1000 / runspeed);
-                    // Doors are opening
-                    this.weight -= inputs[currentFloor-1].Item2;
-                    this.requests -= inputs[currentFloor-1].Item2;
-                    this.exitRequests -= inputs[currentFloor-1].Item2;
-                    inputs[currentFloor-1] = (inputs[currentFloor-1].Item1, 0);
-                    while(this.weight < this.maxWeight && inputs[currentFloor-1].Item1 > 0){
-                        this.weight += 1;
-                        this.requests -= 1;
-                        inputs[currentFloor-1] = (inputs[currentFloor-1].Item1 - 1, inputs[currentFloor-1].Item2);
-                    }
+                    openTheDoors();
                 }
                 else{
                     this.logger.log("passing "+currentFloor.ToString() + "    "+inpstr());
                 }
             }
+            this.paused = true;
             this.logger.log("no more requests, pausing");
+            return;
+        }
+
+        private void openTheDoors(){
+            this.state=0;
+            this.logger.log("stopped at "+currentFloor.ToString() + "    "+inpstr());
+            Thread.Sleep(1000 / runspeed);
+            // Doors are opening
+            this.weight -= inputs[currentFloor-1].Item2;
+            this.requests -= inputs[currentFloor-1].Item2;
+            this.exitRequests -= inputs[currentFloor-1].Item2;
+            inputs[currentFloor-1] = (inputs[currentFloor-1].Item1, 0);
+            while(this.weight < this.maxWeight && inputs[currentFloor-1].Item1 > 0){
+                this.weight += 1;
+                this.requests -= 1;
+                inputs[currentFloor-1] = (inputs[currentFloor-1].Item1 - 1, inputs[currentFloor-1].Item2);
+            }
         }
 
         private int findNextFloor(){
             if(this.direction == "U") {
+                if(state == 1 && nextFloor == currentFloor+1){
+                    return nextFloor;
+                }
                 for(int i = currentFloor + this.state; i <= floors; i++){
                     if((this.maxWeight > this.weight && inputs[i-1].Item1 > 0) || inputs[i-1].Item2 > 0){
                         logger.log("nextFloor determined to be "+i);
@@ -195,6 +207,9 @@ namespace ElevatorChallenge
                 }
             }
             else {
+                if(state == 1 && nextFloor == currentFloor-1){
+                    return nextFloor;
+                }
                 for(int i = currentFloor - this.state; i > 0; i--){
                     if((this.maxWeight > this.weight && inputs[i-1].Item1 > 0) || inputs[i-1].Item2 > 0){
                         logger.log("nextFloor determined to be "+i);
@@ -230,6 +245,11 @@ namespace ElevatorChallenge
         public int getWeight(){
             Console.WriteLine("W"+this.weight);
             return this.weight;
+        }
+
+        public int getRequests(){
+            Console.WriteLine("R"+this.requests);
+            return this.requests;
         }
 
     }
